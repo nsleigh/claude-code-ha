@@ -264,6 +264,10 @@ setup_persistent_claude() {
     use_persistent_claude=$(bashio::config 'use_persistent_claude' 'false')
     auto_update_claude_on_start=$(bashio::config 'auto_update_claude_on_start' 'false')
 
+    # Exported so the session picker knows whether to offer a manual
+    # "Update Claude Code" menu option.
+    export USE_PERSISTENT_CLAUDE="$use_persistent_claude"
+
     if [ "$use_persistent_claude" != "true" ]; then
         bashio::log.info "Persistent Claude override: disabled"
         return 0
@@ -277,6 +281,12 @@ setup_persistent_claude() {
             claude_npm_spec="@anthropic-ai/claude-code@1.0.128"
             ;;
     esac
+
+    # Exported so the session picker's manual update option can reuse the
+    # same install path/spec instead of duplicating the arch resolution.
+    export PERSISTENT_CLAUDE_ROOT="$persistent_root"
+    export CLAUDE_BIN_LINK="$claude_link"
+    export CLAUDE_NPM_SPEC="$claude_npm_spec"
 
     if [ "$auto_update_claude_on_start" = "true" ]; then
         bashio::log.info "Persistent Claude override: updating Claude Code in /data/npm..."

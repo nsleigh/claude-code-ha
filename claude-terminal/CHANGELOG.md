@@ -1,5 +1,19 @@
 # Changelog
 
+## 2.2.0
+
+### ✨ New Feature - Manual "Update Claude Code" menu option
+- **New session picker option** to update Claude Code on demand, without waiting
+  for a container restart. It only appears when `use_persistent_claude` is
+  enabled — otherwise there's no persistent install for it to update, so the
+  menu is unchanged.
+- Runs the same `npm install -g <spec> --prefer-online` into `/data/npm` that
+  `setup_persistent_claude()` uses on startup, then re-links `/usr/local/bin/claude`
+  and prints the resulting version. `run.sh` now exports `USE_PERSISTENT_CLAUDE`,
+  `PERSISTENT_CLAUDE_ROOT`, `CLAUDE_BIN_LINK`, and `CLAUDE_NPM_SPEC` so the picker
+  reuses the exact same install path and architecture-resolved package spec
+  instead of duplicating that logic.
+
 ## 2.1.1
 
 ### 🐛 Bug Fix - Persistent Claude update ignored until you exited the session once
