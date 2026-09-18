@@ -1,6 +1,6 @@
 # Changelog
 
-## 2.2.0
+## 2.1.2
 
 ### ✨ New Feature - Manual "Update Claude Code" menu option
 - **New session picker option** to update Claude Code on demand, without waiting
