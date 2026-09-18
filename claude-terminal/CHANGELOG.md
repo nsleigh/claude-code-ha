@@ -1,5 +1,17 @@
 # Changelog
 
+## 2.1.1
+
+### 🐛 Bug Fix - Persistent Claude update ignored until you exited the session once
+- **Auto-launch now calls `/usr/local/bin/claude` directly.** The startup command
+  built by `get_claude_launch_command()` ran a bare `claude`, which `PATH`
+  resolved to `/data/home/.local/bin/claude` — the image's baked-in default —
+  ahead of `/usr/local/bin/claude`, the binary `setup_persistent_claude()` keeps
+  up to date when `use_persistent_claude`/`auto_update_claude_on_start` are
+  enabled. The session picker already used the absolute path, which is why
+  exiting back to the menu and relaunching showed the updated version while the
+  very first launch after a restart did not.
+
 ## 2.1.0
 
 ### 🐛 Bug Fix - Copying out of the terminal did nothing (#30)
