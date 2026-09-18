@@ -177,6 +177,22 @@ The terminal starts directly in your `/config` directory, giving you immediate a
 - If you have authentication issues, try logging out and back in
 - Check the add-on logs for any error messages
 
+### Typing Lags or Pauses for a Few Seconds, Then Catches Up
+
+This has been traced to Home Assistant's own ingress layer (not this add-on):
+requests to the terminal panel are proxied through Home Assistant's ingress
+reverse proxy and appear to pass through the frontend's service worker
+(Workbox), which can occasionally add several seconds of latency without
+dropping the underlying WebSocket connection - the input just queues and then
+flushes all at once.
+
+Both `http://<home-assistant-host>:7680/` (this add-on's own web UI, still
+proxied to ttyd) and `http://<home-assistant-host>:7681/` (ttyd directly) are
+published ports (see `config.yaml`) that bypass Home Assistant's ingress
+entirely. If typing feels laggy through the sidebar panel, try one of those
+URLs directly - if the lag disappears, it confirms the ingress layer rather
+than anything in this add-on.
+
 ## Credits
 
 **Original Creator:** Tom Cassady ([@heytcass](https://github.com/heytcass))
