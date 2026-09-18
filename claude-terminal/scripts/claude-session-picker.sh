@@ -24,6 +24,26 @@ show_banner() {
     echo ""
 }
 
+# Only offer the manual update option when run.sh has set up a persistent
+# Claude install (use_persistent_claude: true) for it to update.
+is_persistent_claude_enabled() {
+    [ "${USE_PERSISTENT_CLAUDE:-false}" = "true" ]
+}
+
+# Menu item numbers shift depending on whether the update option is shown,
+# so both the menu display and the choice handling read from these.
+compute_menu_numbers() {
+    if is_persistent_claude_enabled; then
+        NUM_UPDATE=7
+        NUM_BASH=8
+        NUM_EXIT=9
+    else
+        NUM_UPDATE=""
+        NUM_BASH=7
+        NUM_EXIT=8
+    fi
+}
+
 show_menu() {
     local ver="unknown"
     if command -v claude &> /dev/null; then
@@ -40,15 +60,18 @@ show_menu() {
     echo "  4) ⚙️  Custom Claude command (manual flags)"
     echo "  5) 🔐 Claude authentication helper"
     echo "  6) 🐙 GitHub CLI login (gh auth)"
-    echo "  7) 🐚 Drop to bash shell"
-    echo "  8) ❌ Exit"
+    if is_persistent_claude_enabled; then
+        echo "  ${NUM_UPDATE}) 🔄 Update Claude Code"
+    fi
+    echo "  ${NUM_BASH}) 🐚 Drop to bash shell"
+    echo "  ${NUM_EXIT}) ❌ Exit"
     echo ""
 }
 
 get_user_choice() {
     local choice
     # Send prompt to stderr to avoid capturing it with the return value
-    printf "Enter your choice [1-8] (default: 1): " >&2
+    printf "Enter your choice [1-%s] (default: 1): " "$NUM_EXIT" >&2
     read -r choice
     
     # Default to 1 if empty
@@ -103,6 +126,30 @@ launch_claude_custom() {
         sleep 1
         eval "/usr/local/bin/claude $custom_args $base_flags"
     fi
+}
+
+launch_update_claude() {
+    local persistent_root="${PERSISTENT_CLAUDE_ROOT:-/data/npm}"
+    local claude_link="${CLAUDE_BIN_LINK:-/usr/local/bin/claude}"
+    local claude_npm_spec="${CLAUDE_NPM_SPEC:-@anthropic-ai/claude-code@latest}"
+    local persistent_bin="$persistent_root/bin/claude"
+
+    echo "🔄 Updating Claude Code (${claude_npm_spec})..."
+    if NPM_CONFIG_PREFIX="$persistent_root" npm install -g "$claude_npm_spec" --prefer-online; then
+        if [ -x "$persistent_bin" ]; then
+            ln -sf "$persistent_bin" "$claude_link"
+            local new_version
+            new_version=$("$claude_link" --version 2>/dev/null || echo "unknown")
+            echo "✅ Claude Code updated: $new_version"
+        else
+            echo "⚠️  Update ran but no binary was found at $persistent_bin"
+        fi
+    else
+        echo "❌ Update failed. Keeping the existing installed version."
+    fi
+
+    printf "Press Enter to return to menu..." >&2
+    read -r
 }
 
 launch_auth_helper() {
@@ -210,10 +257,11 @@ exit_session_picker() {
 # Main execution flow
 main() {
     while true; do
+        compute_menu_numbers
         show_banner
         show_menu
         choice=$(get_user_choice)
-        
+
         case "$choice" in
             1)
                 launch_claude_new
@@ -233,16 +281,21 @@ main() {
             6)
                 launch_github_auth
                 ;;
-            7)
+            "$NUM_UPDATE")
+                if is_persistent_claude_enabled; then
+                    launch_update_claude
+                fi
+                ;;
+            "$NUM_BASH")
                 launch_bash_shell
                 ;;
-            8)
+            "$NUM_EXIT")
                 exit_session_picker
                 ;;
             *)
                 echo ""
                 echo "❌ Invalid choice: '$choice'"
-                echo "Please select a number between 1-8"
+                echo "Please select a number between 1-${NUM_EXIT}"
                 echo ""
                 printf "Press Enter to continue..." >&2
                 read -r
