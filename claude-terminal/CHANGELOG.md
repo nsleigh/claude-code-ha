@@ -1,5 +1,14 @@
 # Changelog
 
+## 2.1.3
+
+### 🐛 Bug Fix - Version shown in the session picker looked stuck/hardcoded
+- **The banner's version check now resolves `/usr/local/bin/claude` directly**
+  instead of a bare `claude` lookup through `PATH`. `PATH` puts the image's
+  baked-in default binary (`/data/home/.local/bin/claude`) ahead of
+  `/usr/local/bin/claude` — the binary the persistent-Claude update actually
+  changes — so the version line never reflected an update and looked hardcoded.
+
 ## 2.1.2
 
 ### ✨ New Feature - Manual "Update Claude Code" menu option

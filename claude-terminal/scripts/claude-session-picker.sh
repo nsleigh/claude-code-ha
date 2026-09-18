@@ -46,8 +46,8 @@ compute_menu_numbers() {
 
 show_menu() {
     local ver="unknown"
-    if command -v claude &> /dev/null; then
-        ver=$(claude --version 2>/dev/null || echo "unknown")
+    if [ -x /usr/local/bin/claude ]; then
+        ver=$(/usr/local/bin/claude --version 2>/dev/null || echo "unknown")
     fi
 
     echo "Claude Code version: $ver"
