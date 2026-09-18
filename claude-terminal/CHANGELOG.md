@@ -1,16 +1,5 @@
 # Changelog
 
-## 2.1.4
-
-### 📚 Documentation - Known ingress typing-lag issue
-- **Documented a Home Assistant ingress-layer latency issue**: typing can
-  occasionally pause for a few seconds and then catch up all at once. Traced
-  (via the browser's Network tab) to Home Assistant's own ingress reverse
-  proxy/frontend service worker, not this add-on — the underlying ttyd
-  WebSocket stays open throughout, it just queues input during the stall.
-  `DOCS.md` now notes the published `7680`/`7681` ports as a direct-access
-  workaround that bypasses ingress entirely.
-
 ## 2.1.3
 
 ### 🐛 Bug Fix - Version shown in the session picker looked stuck/hardcoded
