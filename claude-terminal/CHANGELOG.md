@@ -1,5 +1,18 @@
 # Changelog
 
+## 2.1.4
+
+### 🛠️ Improvement - Update menu option shows whether an update is available
+- **The "Update Claude Code" line now includes versions**: `(2.1.226 → 2.1.277
+  available)`, `(2.1.277, up to date)`, or `(latest version unknown)` when the
+  registry cannot be reached.
+- The latest version comes from the npm registry, cached for an hour in
+  `/data/.cache/claude-latest-version` so the menu redraw does not hit the
+  network each time (3 second timeout on a cold lookup). On ARMv7, where the
+  install is pinned to `1.0.128`, it compares against the pin instead.
+- Running the update clears the cache so the menu reflects the new version
+  straight away.
+
 ## 2.1.3
 
 ### 🐛 Bug Fix - Version shown in the session picker looked stuck/hardcoded
