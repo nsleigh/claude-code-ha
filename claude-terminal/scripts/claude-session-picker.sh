@@ -44,6 +44,63 @@ compute_menu_numbers() {
     fi
 }
 
+LATEST_VERSION_CACHE="${XDG_CACHE_HOME:-/data/.cache}/claude-latest-version"
+LATEST_VERSION_TTL=3600
+
+# "2.1.226 (Claude Code)" -> "2.1.226"
+get_installed_version() {
+    [ -x /usr/local/bin/claude ] || return 0
+    /usr/local/bin/claude --version 2>/dev/null | awk 'NR==1 {print $1}'
+}
+
+# The version the Update option would install. A pinned spec (ARMv7) is its
+# own answer; otherwise ask the npm registry, cached so the menu redraw loop
+# does not hit the network every time. Prints nothing when it cannot tell.
+get_latest_version() {
+    local spec="${CLAUDE_NPM_SPEC:-@anthropic-ai/claude-code@latest}"
+    local pinned="${spec##*@}"
+    case "$pinned" in
+        [0-9]*) echo "$pinned"; return 0 ;;
+    esac
+
+    local now cached_at cached_version
+    now=$(date +%s)
+    if [ -f "$LATEST_VERSION_CACHE" ]; then
+        read -r cached_at cached_version < "$LATEST_VERSION_CACHE"
+        if [ -n "$cached_version" ] && [ $((now - ${cached_at:-0})) -lt "$LATEST_VERSION_TTL" ]; then
+            echo "$cached_version"
+            return 0
+        fi
+    fi
+
+    local latest
+    latest=$(curl -fsS --max-time 3 https://registry.npmjs.org/@anthropic-ai/claude-code/latest 2>/dev/null | jq -r '.version // empty' 2>/dev/null)
+    if [ -n "$latest" ]; then
+        mkdir -p "$(dirname "$LATEST_VERSION_CACHE")" 2>/dev/null
+        echo "$now $latest" > "$LATEST_VERSION_CACHE" 2>/dev/null
+        echo "$latest"
+    fi
+}
+
+# True when $1 is strictly newer than $2.
+version_is_newer() {
+    [ "$1" != "$2" ] && [ "$(printf '%s\n%s\n' "$1" "$2" | sort -V | tail -n 1)" = "$1" ]
+}
+
+update_menu_label() {
+    local installed latest
+    installed=$(get_installed_version)
+    latest=$(get_latest_version)
+
+    if [ -z "$latest" ]; then
+        echo "Update Claude Code (latest version unknown)"
+    elif [ -n "$installed" ] && version_is_newer "$latest" "$installed"; then
+        echo "Update Claude Code ($installed → $latest available)"
+    else
+        echo "Update Claude Code (${installed:-$latest}, up to date)"
+    fi
+}
+
 show_menu() {
     local ver="unknown"
     if command -v claude &> /dev/null; then
@@ -61,7 +118,7 @@ show_menu() {
     echo "  5) 🔐 Claude authentication helper"
     echo "  6) 🐙 GitHub CLI login (gh auth)"
     if is_persistent_claude_enabled; then
-        echo "  ${NUM_UPDATE}) 🔄 Update Claude Code"
+        echo "  ${NUM_UPDATE}) 🔄 $(update_menu_label)"
     fi
     echo "  ${NUM_BASH}) 🐚 Drop to bash shell"
     echo "  ${NUM_EXIT}) ❌ Exit"
@@ -136,6 +193,7 @@ launch_update_claude() {
 
     echo "🔄 Updating Claude Code (${claude_npm_spec})..."
     if NPM_CONFIG_PREFIX="$persistent_root" npm install -g "$claude_npm_spec" --prefer-online; then
+        rm -f "$LATEST_VERSION_CACHE"
         if [ -x "$persistent_bin" ]; then
             ln -sf "$persistent_bin" "$claude_link"
             local new_version
