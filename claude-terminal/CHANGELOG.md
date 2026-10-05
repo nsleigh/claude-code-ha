@@ -1,5 +1,23 @@
 # Changelog
 
+## 2.1.5
+
+### 🐛 Bug Fix - Image and text paste in the web terminal
+- **Pasting an image while the terminal has focus now uploads it**: the paste
+  listener is now attached inside the terminal iframe (re-attached on every
+  ttyd reconnect). Before, paste events fired inside the iframe and the page
+  never saw them.
+- **Ctrl+V no longer shows "No image found in clipboard"**: Ctrl+V is kept
+  away from xterm.js, so Claude Code no longer receives `^V` and tries to read
+  the container's empty clipboard. On Windows/Linux the browser's normal paste
+  runs, so Shift+Ctrl+V is no longer needed for text. On macOS, Ctrl+V reads
+  the clipboard through the async Clipboard API (needs HTTPS and a one-time
+  permission).
+- **Text paste is reliable after an image upload**: the uploaded path is
+  inserted at the prompt with xterm's own `term.paste()`. The user's clipboard
+  is no longer overwritten, and the synthetic keypress/input events that could
+  repeat or garble terminal input have been removed.
+
 ## 2.1.4
 
 ### 🛠️ Improvement - Update menu option shows whether an update is available
