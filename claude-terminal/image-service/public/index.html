@@ -333,6 +333,75 @@
             const iframe = document.getElementById('terminal-frame');
             // Use relative path for Home Assistant ingress compatibility
             iframe.src = 'terminal/';
+            // Paste events fire inside the (same-origin) iframe while the terminal
+            // has focus, so the parent document's listener never sees them.
+            iframe.addEventListener('load', () => installImagePaste(iframe));
+        }
+
+        // Async Clipboard API path (needs HTTPS or localhost; prompts for permission once).
+        async function pasteFromAsyncClipboard(win) {
+            const term = win.term;
+            if (!navigator.clipboard || !navigator.clipboard.read) {
+                setStatus('Ctrl+V needs HTTPS here - use Cmd+V, drag-drop or 📎', 'error');
+                return;
+            }
+            try {
+                const items = await navigator.clipboard.read();
+                for (const item of items) {
+                    const type = item.types.find(t => t.startsWith('image/'));
+                    if (type) {
+                        const blob = await item.getType(type);
+                        const ext = type.split('/')[1].replace('svg+xml', 'svg');
+                        await uploadImage(new File([blob], `pasted.${ext}`, { type }));
+                        return;
+                    }
+                }
+                // Prefer text/plain from the same read() so we stay within the user
+                // activation (Safari rejects a second clipboard call after awaits).
+                const textItem = items.find(i => i.types.includes('text/plain'));
+                const text = textItem
+                    ? await (await textItem.getType('text/plain')).text()
+                    : await navigator.clipboard.readText();
+                if (text && term) term.paste(text);
+            } catch (err) {
+                console.log('Async clipboard read failed:', err);
+                setStatus('Clipboard read blocked - use Cmd+V, drag-drop or 📎', 'error');
+            }
+        }
+
+        // Intercept image pastes inside the terminal frame before xterm.js does.
+        // Text pastes are left alone so xterm handles them (incl. bracketed paste).
+        function installImagePaste(iframe) {
+            let win;
+            try { win = iframe.contentWindow; win.document; } catch { return; }
+            if (!win || win.__imagePasteInstalled) return;
+            win.__imagePasteInstalled = true;
+            const isMac = /Mac|iPhone|iPad/.test(navigator.platform || navigator.userAgent);
+
+            // Ctrl+V reaches the pty as ^V (0x16). Claude Code treats that as "paste image
+            // from the system clipboard" - the container's, which is empty - hence
+            // "No image found in clipboard". Keep ^V away from xterm.
+            win.addEventListener('keydown', async (e) => {
+                if (!(e.ctrlKey && !e.metaKey && !e.altKey && (e.key === 'v' || e.key === 'V'))) return;
+                e.stopImmediatePropagation();
+                if (!isMac) return; // Windows/Linux: default action fires a real paste event
+                // macOS: Ctrl+V fires no paste event, so read the clipboard ourselves.
+                e.preventDefault();
+                await pasteFromAsyncClipboard(win);
+            }, true);
+            win.addEventListener('paste', async (e) => {
+                const items = e.clipboardData?.items;
+                if (!items) return;
+                for (const item of items) {
+                    if (item.kind === 'file' && item.type.startsWith('image/')) {
+                        e.preventDefault();
+                        e.stopImmediatePropagation();
+                        const file = item.getAsFile();
+                        if (file) await uploadImage(file);
+                        return;
+                    }
+                }
+            }, true);
         }
 
         const status = document.getElementById('status');
@@ -413,7 +482,7 @@
                         }
                     };
 
-                    // Auto-copy to clipboard and try to paste into terminal
+                    // Insert the path at the terminal prompt
                     autoCopyAndPaste(filePath);
 
                     // Helper to select text (works in all contexts)
@@ -551,49 +620,22 @@
             }
         });
 
-        // Auto-copy path and attempt to paste into terminal
+        // Insert the uploaded path at the prompt via xterm's own paste API.
+        // Does not overwrite the user's clipboard.
         async function autoCopyAndPaste(filePath) {
             const iframe = document.getElementById('terminal-frame');
-
-            // Step 1: Copy to clipboard
-            const copied = await copyToClipboard(filePath);
-
-            if (copied) {
-                // Step 2: Focus the terminal iframe
-                try {
-                    iframe.contentWindow.focus();
-                    iframe.focus();
-
-                    // Step 3: Try to send the text directly
-                    // Note: This might not work due to iframe security, but we'll try
-                    setTimeout(() => {
-                        // Try to trigger a paste event in the iframe
-                        const pasteEvent = new ClipboardEvent('paste', {
-                            clipboardData: new DataTransfer(),
-                            bubbles: true,
-                            cancelable: true
-                        });
-
-                        // Try to add the text to the clipboard data
-                        try {
-                            pasteEvent.clipboardData.setData('text/plain', filePath);
-                        } catch (e) {
-                            console.log('Cannot set clipboard data in event:', e);
-                        }
-
-                        iframe.contentWindow.document.dispatchEvent(pasteEvent);
-
-                        // Alternative: Try to send keyboard events
-                        sendTextToTerminal(filePath);
-
-                        setStatus(`📋 ${filePath} - Ready to use! (path in clipboard)`, 'success', true);
-                    }, 100);
-
-                } catch (err) {
-                    console.log('Cannot access iframe for auto-paste:', err);
-                    setStatus(`📋 ${filePath} - Copied! Paste into terminal (Cmd+V)`, 'success', true);
+            try {
+                const term = iframe.contentWindow.term;
+                if (term && typeof term.paste === 'function') {
+                    term.paste(filePath + ' ');
+                    term.focus();
+                    setStatus(`📋 ${filePath} - inserted at prompt`, 'success', true);
+                    return;
                 }
+            } catch (err) {
+                console.log('Cannot reach terminal for auto-insert:', err);
             }
+            setStatus(`📋 ${filePath} (click to copy)`, 'success', true);
         }
 
         // Helper to copy text to clipboard
@@ -627,45 +669,6 @@
             } catch (err) {
                 document.body.removeChild(textArea);
                 return false;
-            }
-        }
-
-        // Try to send text to terminal by simulating keyboard input
-        function sendTextToTerminal(text) {
-            const iframe = document.getElementById('terminal-frame');
-
-            // Try to send each character as a keyboard event
-            // This might not work due to iframe restrictions, but worth trying
-            try {
-                const iframeDoc = iframe.contentWindow.document;
-                const terminal = iframeDoc.querySelector('.xterm-helper-textarea') ||
-                               iframeDoc.querySelector('textarea') ||
-                               iframeDoc.body;
-
-                if (terminal) {
-                    // Try to insert text
-                    if (terminal.value !== undefined) {
-                        terminal.value = text;
-                        terminal.dispatchEvent(new Event('input', { bubbles: true }));
-                    }
-
-                    // Try to send keyboard events for each character
-                    for (const char of text) {
-                        const keyEvent = new KeyboardEvent('keypress', {
-                            key: char,
-                            char: char,
-                            keyCode: char.charCodeAt(0),
-                            bubbles: true
-                        });
-                        terminal.dispatchEvent(keyEvent);
-                    }
-
-                    console.log('Attempted to send text to terminal');
-                }
-            } catch (err) {
-                console.log('Cannot send keyboard events to iframe:', err);
-                // This is expected due to cross-origin restrictions
-                // The clipboard copy is the fallback
             }
         }
 
