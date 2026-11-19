@@ -74,6 +74,100 @@ is_persistent_claude_enabled() {
     [ "${USE_PERSISTENT_CLAUDE:-false}" = "true" ]
 }
 
+# Other windows of the tmux session:
+# one line each, "@id<TAB>number<TAB>label<TAB>kind", kind being claude,
+# picker or empty, whatever the label. Nothing outside tmux.
+# PICKER_TMUX lets the tests stand in for tmux.
+PICKER_TMUX=${PICKER_TMUX:-tmux}
+
+# Every process: "pid ppid name" (name is the kernel's 15-letter comm).
+# cat, not awk on the files: a process that exits between the glob and the
+# read would make BusyBox awk stop at its missing file, losing every process
+# after it, and with them the labels; cat skips it and goes on. The pid comes
+# from the file's own Pid: line. PICKER_PROC lets the tests stand in for /proc.
+process_table() {
+    cat "${PICKER_PROC:-/proc}"/[0-9]*/status 2>/dev/null |
+        awk '/^Name:/ { name = $2 } /^Pid:/ { pid = $2 } /^PPid:/ { print pid, $2, name }'
+}
+
+# What each window runs, for its label. tmux names a
+# window after its pane's process group leader, which for the launch
+# command's `bash -c` is bash, so look for Claude (named claude, or its
+# version) or this picker among the window's processes. A Claude is named by
+# its conversation: the terminal title it sets, "✳ <topic>", until then
+# "Claude Code". A name set with Ctrl-b , (no longer the pane's command) is
+# kept.
+other_windows() {
+    [ -n "${TMUX:-}" ] || return 0
+    local own
+    own=$("$PICKER_TMUX" display-message -p -t "${TMUX_PANE:-}" '#{window_id}' 2>/dev/null) || own=''
+    "$PICKER_TMUX" list-windows -F $'#{window_id}\t#{window_index}\t#{window_name}\t#{pane_current_command}\t#{pane_pid}\t#{pane_title}' 2>/dev/null |
+        awk -F'\t' -v own="$own" '
+            NR == FNR { split($0, p, " "); parent[p[1]] = p[2]; name[p[1]] = p[3]; next }
+            function kind(root,   pid, q, d, n, found) {
+                found = ""
+                for (pid in parent) {
+                    q = pid
+                    for (d = 0; d < 64 && q != "" && q != "0"; d++) {
+                        if (q == root) {
+                            n = name[pid]
+                            if (n == "claude" || n ~ /^[0-9]+\.[0-9]+\.[0-9]+/) return "claude"
+                            if (n ~ /^claude-session/) found = "picker"
+                            break
+                        }
+                        q = parent[q]
+                    }
+                }
+                return found
+            }
+            $1 == own { next }
+            {
+                k = kind($5)
+                label = ($3 == $4 && k != "") ? k : $3
+                if ($3 == $4 && k == "claude") {
+                    # The title is the rest of the line, tabs and all
+                    title = $0
+                    for (i = 1; i <= 5; i++) sub(/^[^\t]*\t/, "", title)
+                    gsub(/\t/, " ", title)
+                    sub(/^[^A-Za-z0-9]+/, "", title)
+                    if (title != "" && title != "Claude Code") label = substr(title, 1, 80)
+                }
+                printf "%s\t%s\t%s\t%s\n", $1, $2, label, k
+            }' <(process_table) -
+}
+
+# "1 claude, 3 Fix the lights…": names cut at 16 characters, so the line
+# stays short (the w) list shows them in full)
+describe_windows() {
+    awk -F'\t' '{
+        name = $3
+        if (length(name) > 16) name = substr(name, 1, 15) "…"
+        printf "%s%s %s", (NR > 1 ? ", " : ""), $2, name
+    } END { if (NR) print "" }'
+}
+
+# Below this much free memory, ask before starting another Claude (each uses
+# roughly 500-600 MB, and the add-on has no memory limit of its own).
+LOW_MEMORY_MB=1024
+CLAUDE_MEMORY_MB=550
+
+available_memory_mb() {
+    awk '/^MemAvailable:/ { printf "%d\n", $2 / 1024 }' "${PICKER_MEMINFO:-/proc/meminfo}" 2>/dev/null
+}
+
+# True to go ahead: enough memory, or the user said yes
+memory_ok() {
+    local free answer
+    free=$(available_memory_mb)
+    case "$free" in ''|*[!0-9]*) return 0 ;; esac
+    [ "$free" -lt "$LOW_MEMORY_MB" ] || return 0
+    echo ""
+    echo "⚠️  Only ${free} MB of memory is free, and each Claude uses about ${CLAUDE_MEMORY_MB} MB."
+    printf "Start Claude anyway? [y/N] " >&2
+    read -r answer
+    [[ "$answer" =~ ^[Yy] ]]
+}
+
 # Menu item numbers shift depending on whether the update option is shown,
 # so both the menu display and the choice handling read from these.
 compute_menu_numbers() {
@@ -146,7 +240,8 @@ update_menu_label() {
 }
 
 show_menu() {
-    local ver="unknown"
+    local ver="unknown" others
+    others=$(other_windows)
     if [ -x /usr/local/bin/claude ]; then
         ver=$(/usr/local/bin/claude --version 2>/dev/null || echo "unknown")
     fi
@@ -174,6 +269,13 @@ show_menu() {
         fi
         echo "  ${NUM_BASH}) 🐚 Bash shell"
         echo "  ${NUM_EXIT}) ❌ Exit"
+        # 🔀, not 🪟: 🪟 (Unicode 13) is drawn two cells wide but counted as
+        # one by the terminal, so it ran into the text
+        if [ -n "$others" ]; then
+            echo "  w) 🔀 Switch window"
+            echo ""
+            echo "Other windows: $(printf '%s\n' "$others" | wc -l | tr -d ' ')"
+        fi
         echo ""
         return
     fi
@@ -193,6 +295,11 @@ show_menu() {
     fi
     echo "  ${NUM_BASH}) 🐚 Drop to bash shell"
     echo "  ${NUM_EXIT}) ❌ Exit"
+    if [ -n "$others" ]; then
+        echo "  w) 🔀 Switch to another window"
+        echo ""
+        echo "Other windows: $(printf '%s\n' "$others" | describe_windows)"
+    fi
     echo ""
 }
 
@@ -282,14 +389,65 @@ launch_claude_custom() {
     fi
 }
 
+switch_window() {
+    local windows choice id index label
+    windows=$(other_windows)
+    if [ -z "$windows" ]; then
+        echo "No other windows."
+        sleep 1
+        return
+    fi
+    echo ""
+    echo "Switch to:"
+    while IFS=$'\t' read -r id index label _; do
+        echo "  ${index}) ${label}"
+    done <<<"$windows"
+    printf "Window number (Enter to go back): " >&2
+    read -r choice
+    [ -n "$choice" ] || return 0
+    id=$(awk -F'\t' -v n="$choice" '$2 == n { print $1 }' <<<"$windows")
+    if [ -n "$id" ]; then
+        "$PICKER_TMUX" select-window -t "$id"
+    else
+        echo "❌ No window ${choice}"
+        sleep 1
+    fi
+}
+
 launch_update_claude() {
     local persistent_root="${PERSISTENT_CLAUDE_ROOT:-/data/npm}"
     local claude_link="${CLAUDE_BIN_LINK:-/usr/local/bin/claude}"
     local claude_npm_spec="${CLAUDE_NPM_SPEC:-@anthropic-ai/claude-code@latest}"
     local persistent_bin="$persistent_root/bin/claude"
+    local running answer status
+
+    # npm replaces the files a Claude in another window was started from. It
+    # keeps running the old version until restarted, but could fail if it
+    # loads a file that changed.
+    running=$(other_windows | awk -F'\t' '$4 == "claude" { printf "%s%s", (n++ ? ", " : ""), $2 }')
+    if [ -n "$running" ]; then
+        echo ""
+        echo "⚠️  Claude is running in window ${running}. It keeps the old version until"
+        echo "   restarted, and could fail if it loads a file the update changes."
+        printf "Update anyway? [y/N] " >&2
+        read -r answer
+        [[ "$answer" =~ ^[Yy] ]] || return 0
+    fi
 
     echo "🔄 Updating Claude Code (${claude_npm_spec})..."
-    if NPM_CONFIG_PREFIX="$persistent_root" npm install -g "$claude_npm_spec" --prefer-online; then
+    mkdir -p "$persistent_root"
+    # One update at a time: two npm installs into one folder can leave it
+    # half installed
+    status=0
+    (
+        if command -v flock >/dev/null 2>&1; then
+            flock -n 9 || exit 75
+        fi
+        NPM_CONFIG_PREFIX="$persistent_root" npm install -g "$claude_npm_spec" --prefer-online
+    ) 9>"$persistent_root/.update-lock" || status=$?
+    if [ "$status" -eq 75 ]; then
+        echo "⏳ Another window is already updating Claude Code. Try again when it has finished."
+    elif [ "$status" -eq 0 ]; then
         rm -f "$LATEST_VERSION_CACHE"
         if [ -x "$persistent_bin" ]; then
             ln -sf "$persistent_bin" "$claude_link"
@@ -419,22 +577,25 @@ main() {
 
         case "$choice" in
             1)
-                launch_claude_new
+                memory_ok && launch_claude_new
                 ;;
             2)
-                launch_claude_continue
+                memory_ok && launch_claude_continue
                 ;;
             3)
-                launch_claude_resume
+                memory_ok && launch_claude_resume
                 ;;
             4)
-                launch_claude_custom
+                memory_ok && launch_claude_custom
                 ;;
             5)
                 launch_auth_helper
                 ;;
             6)
                 launch_github_auth
+                ;;
+            w|W)
+                switch_window
                 ;;
             "$NUM_UPDATE")
                 if is_persistent_claude_enabled; then
