@@ -26,6 +26,7 @@ import { register as registerFilesApi } from './files-api.mjs';
 import { register as registerGitApi } from './git-api.mjs';
 import { uploadFileName, reserveName } from './uploads.mjs';
 import { register as registerVoiceApi } from './voice-api.mjs';
+import { register as registerWindowsApi } from './windows-api.mjs';
 
 const app = express();
 const PORT = process.env.IMAGE_SERVICE_PORT || 7680;
@@ -90,6 +91,7 @@ registerFilesApi(app);
 // Changes tab: git status/diff of /config, revert and checkpoints
 registerGitApi(app);
 registerVoiceApi(app);
+registerWindowsApi(app);
 
 // File upload endpoint
 app.post('/upload', upload.single('file'), (req, res) => {

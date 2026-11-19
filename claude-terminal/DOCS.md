@@ -486,6 +486,29 @@ The terminal can hold several windows, each with its own Claude or shell,
 for example a second Claude while the first is busy running a long command.
 They all keep running when you switch away or close the panel.
 
+**The window bar.** The panel header shows a tab for each window, labelled
+with its number and what it runs: a Claude by its conversation's name once
+Claude has given it one (the topic it shows as the terminal title, usually
+the name `/resume` lists), otherwise `claude`, `picker` or `bash`, or a name
+you gave the window. Long names are shortened on the tab; the tooltip and
+the phone list show them in full. A green dot marks a busy window you aren't
+looking at: a Claude that is working (its footer shows "esc to interrupt")
+or still running a command in the background ("1 shell"), or a shell running
+a command. On a phone, or when the tabs don't fit, one button (`🪟 2/3 ▾`)
+opens the same list, with each window's memory use.
+- **+** (or **New window** in the list) opens a window that starts like the
+  first one: Claude straight away with **Start Claude automatically** on, the
+  session picker with it off. If less than about 1 GB of memory is free, it
+  asks first. Each Claude uses roughly 500–600 MB, which matters on a 2–4 GB
+  Pi or HA Green
+- **✕** closes a window after asking. It shows on the current tab (and on
+  hover with a mouse), and on each row of the phone list. Whatever the window
+  is running ends; a Claude's conversation is saved, and `claude -r` resumes
+  it. The last window can't be closed this way, since that would end the
+  session
+- Every device shows the same windows, and switching on one switches all of
+  them, so opening the panel elsewhere lands where you were
+
 **The session picker** lists the other windows under its menu (a Claude by
 its conversation's name once it has one) and offers `w) Switch to another
 window`. It asks before starting Claude when less than about 1 GB of memory
@@ -502,7 +525,7 @@ one update at a time.
 | `Ctrl-b 1` … `9` | Go to that window |
 | `Ctrl-b n` / `Ctrl-b p` | Next / previous window |
 | `Ctrl-b w` | List all windows with what each is running; pick one with the arrows and Enter |
-| `Ctrl-b ,` | Rename the window (shown in the status bar and the picker) |
+| `Ctrl-b ,` | Rename the window (shown in the window bar and the status bar) |
 | `Ctrl-b &` | Close the window, after asking |
 
 - Use lower case: `Ctrl-b C` (capital, for example with Caps Lock on) opens

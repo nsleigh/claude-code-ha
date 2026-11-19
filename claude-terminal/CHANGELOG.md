@@ -1,5 +1,17 @@
 # Changelog
 
+## 2.5.10
+
+### ✨ New Feature - Window Bar for More Than One Claude
+- **Tabs for the terminal's windows in the panel header**: the picker (2.5.9) can list and switch windows, but nothing in the panel showed they existed, and a phone has no `Ctrl-b` keys
+  - Each tab shows the window's number and what it runs: a Claude by its conversation's name, otherwise `claude`, `picker` or `bash`, or a name given with `Ctrl-b ,`. Long names are shortened on the tab and shown in full in the tooltip and the phone list
+  - A green dot marks another window that is busy: a Claude that is working (its footer shows "esc to interrupt") or still running a command in the background ("1 shell"), or a shell running a command
+  - **+** opens a window that starts like the first one (Claude, or the session picker with **Start Claude automatically** off). With less than about 1 GB of memory free, it asks first
+  - **✕** closes a window after asking, saying when it is busy. It shows on the current tab, on hover with a mouse, and on each row of the phone list. The last window can't be closed this way
+  - On a phone, or when the tabs don't fit, one button (`🪟 2/3 ▾`) opens a list of the windows with their memory use, **+ New window** and the free memory
+  - Every device shows the same windows, as before: switching on one switches all, and a new device opens where you were. Windows opened or switched with the tmux keys show up within a few seconds
+- The header's title now shortens with "…" to make room for the tabs
+
 ## 2.5.9
 
 ### 🛠️ Improvement - Session Picker Helps With More Than One Claude

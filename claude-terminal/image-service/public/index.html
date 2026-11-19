@@ -433,6 +433,256 @@
             background: #1a7f37;
         }
 
+        /* Window bar (windows-api.mjs): the tmux windows of the one session.
+           Tabs on wide screens; on phones one button opens a list. */
+        /* The tabs and the title give way to the buttons on the right: the
+           title shortens with an ellipsis, and when the tabs still don't fit
+           the bar turns into the one-button list (windows-compact) */
+        #header-left {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            flex: 1 1 auto;
+            min-width: 0;
+            margin-right: 12px;
+        }
+
+        /* The title gives way first (flex shares shrinking in proportion,
+           so without a high factor the tabs would lose space while a long
+           title kept its share, and the list would appear needlessly) */
+        #header-title {
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            min-width: 4em;
+            flex-shrink: 1000;
+        }
+
+        #header-actions {
+            flex-shrink: 0;
+        }
+
+        /* Both classes, so these win over the has-windows rules below */
+        #header.has-windows.windows-compact #window-bar {
+            display: none;
+        }
+
+        #header.has-windows.windows-compact #window-menu-btn {
+            display: inline-flex;
+        }
+
+        #header.has-windows #header-subtitle {
+            display: none;
+        }
+
+        #window-bar {
+            display: none;
+            align-items: center;
+            gap: 4px;
+            min-width: 0;
+            overflow: hidden;
+        }
+
+        #header.has-windows #window-bar {
+            display: flex;
+        }
+
+        .window-tab {
+            display: inline-flex;
+            align-items: center;
+            height: 30px;
+            border-radius: 4px;
+            background: #3a3a3a;
+            border: 1px solid #4a4a4a;
+            flex-shrink: 0;
+        }
+
+        .window-tab.active {
+            background: #1e1e1e;
+            border-color: #007acc;
+        }
+
+        .window-tab button {
+            background: none;
+            border: none;
+            color: #ccc;
+            font-size: 12px;
+            font-family: inherit;
+            cursor: pointer;
+            height: 100%;
+        }
+
+        .window-tab .window-select {
+            display: inline-flex;
+            align-items: center;
+            padding: 0 10px;
+            white-space: nowrap;
+        }
+
+        /* A conversation's name can be long: the tab shows its start, the
+           tooltip and the phone list all of it. Only the name is cut, so the
+           busy dot after it always shows. */
+        .window-name {
+            max-width: 13em;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        .window-tab.active .window-select {
+            color: #fff;
+        }
+
+        .window-busy {
+            color: #4ec9b0;
+            margin-left: 4px;
+        }
+
+        /* The close button shows on the current tab, and on hover where there
+           is a mouse, so a switch can't hit it by mistake. On a touch screen
+           (no hover) only the current tab has one. */
+        .window-tab .window-close {
+            display: none;
+            padding: 0 8px 0 2px;
+            color: #999;
+        }
+
+        .window-tab.active .window-close {
+            display: block;
+        }
+
+        @media (hover: hover) {
+            .window-tab:hover .window-close {
+                display: block;
+            }
+        }
+
+        .window-tab .window-close:hover {
+            color: #f48771;
+        }
+
+        #window-bar.single .window-close {
+            display: none !important;
+        }
+
+        #window-new-btn {
+            height: 30px;
+            min-width: 30px;
+            border-radius: 4px;
+            background: #3a3a3a;
+            border: 1px solid #4a4a4a;
+            color: #ccc;
+            font-size: 16px;
+            cursor: pointer;
+            flex-shrink: 0;
+        }
+
+        #window-new-btn:hover {
+            background: #4a4a4a;
+        }
+
+        #window-menu-btn {
+            display: none;
+            background: #3a3a3a;
+            border: 1px solid #4a4a4a;
+            width: auto;
+            padding: 0 10px;
+        }
+
+        /* The window list (phones) and the confirm box share the paste box's
+           look */
+        #windows-modal,
+        #window-confirm-modal {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.8);
+            display: none;
+            align-items: center;
+            justify-content: center;
+            z-index: 2000;
+        }
+
+        #window-confirm-modal {
+            z-index: 2100;
+        }
+
+        #windows-modal.active,
+        #window-confirm-modal.active {
+            display: flex;
+        }
+
+        #windows-modal-content,
+        #window-confirm-content {
+            background: #2d2d2d;
+            border-radius: 8px;
+            padding: 20px;
+            max-width: 420px;
+            width: 90%;
+            border: 1px solid #3d3d3d;
+        }
+
+        #windows-modal-title {
+            font-size: 18px;
+            font-weight: 500;
+            margin-bottom: 12px;
+            color: #fff;
+        }
+
+        #window-confirm-text {
+            color: #ddd;
+            font-size: 14px;
+            line-height: 1.5;
+            margin-bottom: 16px;
+        }
+
+        #windows-list {
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+            margin-bottom: 12px;
+        }
+
+        .window-row {
+            display: flex;
+            align-items: stretch;
+            gap: 6px;
+        }
+
+        .window-row button {
+            min-height: 40px;
+            border-radius: 4px;
+            border: 1px solid #4a4a4a;
+            background: #3a3a3a;
+            color: #ddd;
+            font-size: 15px;
+            font-family: inherit;
+            cursor: pointer;
+            touch-action: manipulation;
+        }
+
+        .window-row .window-select {
+            flex: 1;
+            text-align: left;
+            padding: 0 12px;
+        }
+
+        .window-row.active .window-select {
+            border-color: #007acc;
+            color: #fff;
+        }
+
+        .window-row .window-close {
+            width: 44px;
+        }
+
+        #windows-memory {
+            font-size: 12px;
+            color: #888;
+            margin-bottom: 12px;
+        }
+
         /* Phones: the button labels do not fit next to the title. */
         @media (max-width: 700px) {
             #header-title {
@@ -441,6 +691,19 @@
 
             #header {
                 justify-content: flex-end;
+            }
+
+            /* One button for the windows, at the left, instead of the tabs */
+            #header.has-windows {
+                justify-content: space-between;
+            }
+
+            #header.has-windows #window-bar {
+                display: none;
+            }
+
+            #header.has-windows #window-menu-btn {
+                display: inline-flex;
             }
 
             /* Icon-only, so make them square rather than letting the padding
@@ -881,8 +1144,12 @@
 <body>
     <div id="container">
         <div id="header">
-            <div id="header-title">Claude Terminal Pro<span id="addon-version"></span> - Voice, image & file support</div>
-            <div style="display: flex; align-items: center; gap: 12px;">
+            <div id="header-left">
+                <div id="header-title">Claude Terminal Pro<span id="addon-version"></span><span id="header-subtitle"> - Voice, image & file support</span></div>
+                <div id="window-bar" role="toolbar" aria-label="Terminal windows"></div>
+                <button id="window-menu-btn" class="header-btn" title="Terminal windows" aria-haspopup="dialog"></button>
+            </div>
+            <div id="header-actions" style="display: flex; align-items: center; gap: 12px;">
                 <span id="status"></span>
                 <button id="files-btn" class="header-btn" title="Browse /config, recent changes and check the HA configuration">
                     <span>🗂️</span>
@@ -1029,6 +1296,30 @@
                 <button id="paste-retry-btn" class="modal-btn modal-btn-primary" style="display: none;">Paste from Clipboard</button>
                 <button id="paste-insert-btn" class="modal-btn modal-btn-primary" disabled>Insert in Terminal</button>
                 <button id="paste-close-btn" class="modal-btn modal-btn-secondary">Close</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Window list (phones): switch, close or open a terminal window -->
+    <div id="windows-modal">
+        <div id="windows-modal-content" role="dialog" aria-labelledby="windows-modal-title">
+            <div id="windows-modal-title">🪟 Windows</div>
+            <div id="windows-list"></div>
+            <div id="windows-memory"></div>
+            <div class="modal-buttons">
+                <button id="windows-new-btn" class="modal-btn modal-btn-primary">+ New window</button>
+                <button id="windows-close-btn" class="modal-btn modal-btn-secondary">Close</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Asks before closing a window or starting one with little memory free -->
+    <div id="window-confirm-modal">
+        <div id="window-confirm-content" role="alertdialog" aria-describedby="window-confirm-text">
+            <div id="window-confirm-text"></div>
+            <div class="modal-buttons">
+                <button id="window-confirm-ok" class="modal-btn modal-btn-danger">OK</button>
+                <button id="window-confirm-cancel" class="modal-btn modal-btn-secondary">Cancel</button>
             </div>
         </div>
     </div>
@@ -2365,6 +2656,257 @@
                 try { saved = localStorage.getItem('sidebarOpen') || '0'; } catch { /* private mode */ }
                 if (saved === '1' && !window.matchMedia('(max-width: 700px)').matches) setOpen(true);
             });
+        })();
+
+        // Window bar: the tmux windows of the one session (windows-api.mjs).
+        // A switch switches every device, the same as Ctrl-b n. Polled while
+        // the page is visible, so windows opened or switched with the tmux
+        // keys show up too.
+        (function () {
+            const header = document.getElementById('header');
+            const bar = document.getElementById('window-bar');
+            const menuBtn = document.getElementById('window-menu-btn');
+            const listModal = document.getElementById('windows-modal');
+            const list = document.getElementById('windows-list');
+            const memoryLine = document.getElementById('windows-memory');
+            const confirmModal = document.getElementById('window-confirm-modal');
+            const confirmText = document.getElementById('window-confirm-text');
+            const confirmOk = document.getElementById('window-confirm-ok');
+            const confirmCancel = document.getElementById('window-confirm-cancel');
+            const POLL_MS = 3000;
+            let state = null;
+            let timer = null;
+            let confirmResolve = null;
+
+            function gb(mb) {
+                return (mb / 1024).toFixed(1) + ' GB';
+            }
+
+            function describe(w) {
+                return `${w.index} ${w.label}`;
+            }
+
+            function focusTerminal() {
+                const term = terminalTerm();
+                if (term) term.focus();
+            }
+
+            function askConfirm(message, okLabel) {
+                confirmText.textContent = message;
+                confirmOk.textContent = okLabel;
+                confirmModal.classList.add('active');
+                confirmOk.focus();
+                return new Promise((resolve) => { confirmResolve = resolve; });
+            }
+
+            function answerConfirm(value) {
+                confirmModal.classList.remove('active');
+                const resolve = confirmResolve;
+                confirmResolve = null;
+                if (resolve) resolve(value);
+            }
+
+            confirmOk.addEventListener('click', () => answerConfirm(true));
+            confirmCancel.addEventListener('click', () => answerConfirm(false));
+            confirmModal.addEventListener('click', (e) => { if (e.target === confirmModal) answerConfirm(false); });
+
+            async function request(path, method = 'GET') {
+                const options = { method, cache: 'no-store' };
+                if (method !== 'GET') options.headers = { 'X-Window-Request': '1' };
+                const res = await fetch(path, options);
+                const data = await res.json().catch(() => ({}));
+                if (!res.ok) throw new Error(data.error || `HTTP ${res.status}`);
+                return data;
+            }
+
+            function closeButton(w) {
+                const btn = document.createElement('button');
+                btn.type = 'button';
+                btn.className = 'window-close';
+                btn.textContent = '✕';
+                btn.title = `Close window ${describe(w)}`;
+                btn.setAttribute('aria-label', btn.title);
+                btn.addEventListener('click', (e) => { e.stopPropagation(); closeWindow(w); });
+                return btn;
+            }
+
+            function windowTitle(w) {
+                return describe(w) + (w.busy ? ' (busy)' : '') +
+                    (w.memoryMB !== null ? ` · ${w.memoryMB} MB` : '');
+            }
+
+            // What the tabs show, without the memory: when only the memory
+            // changed, the tooltips are updated in place rather than the tabs
+            // rebuilt, so a click in progress isn't lost
+            let shownKey = '';
+            function barKey() {
+                return JSON.stringify(state.windows.map((w) => [w.id, w.index, w.label, w.active, w.busy]));
+            }
+
+            function renderBar() {
+                const key = barKey();
+                if (key === shownKey) {
+                    for (const tab of bar.querySelectorAll('.window-tab')) {
+                        const w = state.windows.find((x) => x.id === tab.dataset.id);
+                        if (w) tab.querySelector('.window-select').title = windowTitle(w);
+                    }
+                    return;
+                }
+                shownKey = key;
+                bar.replaceChildren();
+                bar.classList.toggle('single', state.windows.length < 2);
+                for (const w of state.windows) {
+                    const tab = document.createElement('div');
+                    tab.className = 'window-tab' + (w.active ? ' active' : '');
+                    tab.dataset.id = w.id;
+                    const select = document.createElement('button');
+                    select.type = 'button';
+                    select.className = 'window-select';
+                    const name = document.createElement('span');
+                    name.className = 'window-name';
+                    name.textContent = describe(w);
+                    select.append(name);
+                    if (w.busy && !w.active) {
+                        const dot = document.createElement('span');
+                        dot.className = 'window-busy';
+                        dot.textContent = '●';
+                        select.append(dot);
+                    }
+                    select.title = windowTitle(w);
+                    select.setAttribute('aria-pressed', String(w.active));
+                    select.addEventListener('click', () => selectWindow(w));
+                    tab.append(select, closeButton(w));
+                    bar.append(tab);
+                }
+                const add = document.createElement('button');
+                add.type = 'button';
+                add.id = 'window-new-btn';
+                add.textContent = '+';
+                add.title = 'Open a new window';
+                add.setAttribute('aria-label', add.title);
+                add.addEventListener('click', newWindow);
+                bar.append(add);
+
+                const active = state.windows.find((w) => w.active);
+                menuBtn.textContent = `🪟 ${active ? active.index : '?'}/${state.windows.length} ▾`;
+            }
+
+            function renderList() {
+                list.replaceChildren();
+                for (const w of state.windows) {
+                    const row = document.createElement('div');
+                    row.className = 'window-row' + (w.active ? ' active' : '');
+                    const select = document.createElement('button');
+                    select.type = 'button';
+                    select.className = 'window-select';
+                    select.textContent = (w.active ? '▸ ' : '') + describe(w) + (w.busy ? ' (busy)' : '') +
+                        (w.memoryMB !== null ? ` · ${w.memoryMB} MB` : '');
+                    select.addEventListener('click', () => { closeList(); selectWindow(w); });
+                    row.append(select);
+                    if (state.windows.length > 1) row.append(closeButton(w));
+                    list.append(row);
+                }
+                memoryLine.textContent = state.memory.availableMB !== null
+                    ? `Free memory: ${gb(state.memory.availableMB)}` : '';
+            }
+
+            // Tabs while they fit; otherwise the one button and its list.
+            // Measured with the tabs shown, in one go, so nothing flickers.
+            function fit() {
+                header.classList.remove('windows-compact');
+                if (bar.offsetParent !== null && bar.scrollWidth > bar.clientWidth + 1) {
+                    header.classList.add('windows-compact');
+                }
+            }
+
+            function render() {
+                header.classList.toggle('has-windows', Boolean(state && state.windows.length));
+                if (!state) return;
+                renderBar();
+                fit();
+                if (listModal.classList.contains('active')) renderList();
+            }
+
+            async function refresh() {
+                try {
+                    state = await request('api/windows');
+                } catch {
+                    state = null;
+                }
+                render();
+            }
+
+            function schedule() {
+                clearTimeout(timer);
+                if (document.visibilityState === 'visible') timer = setTimeout(async () => { await refresh(); schedule(); }, POLL_MS);
+            }
+
+            async function act(path) {
+                try {
+                    state = await request(path, 'POST');
+                } catch (err) {
+                    setStatus('🪟 ' + err.message, 'error');
+                    await refresh();
+                    return false;
+                }
+                render();
+                return true;
+            }
+
+            async function selectWindow(w) {
+                if (!w.active) await act(`api/windows/${encodeURIComponent(w.id)}/select`);
+                focusTerminal();
+            }
+
+            async function closeWindow(w) {
+                const ask = w.busy ? `Window ${describe(w)} is busy. Close it anyway? ` : `Close window ${describe(w)}? `;
+                const what = ask + (w.claude
+                    ? 'Claude stops, and whatever it is running ends. The conversation is saved: claude -r resumes it.'
+                    : 'Whatever it is running ends.');
+                if (!await askConfirm(what, 'Close window')) return;
+                await act(`api/windows/${encodeURIComponent(w.id)}/close`);
+                focusTerminal();
+            }
+
+            async function newWindow() {
+                closeList();
+                await refresh();
+                if (state && state.memory.low) {
+                    const ok = await askConfirm(
+                        `Only ${gb(state.memory.availableMB)} of memory is free, and each Claude uses about ` +
+                        `${gb(state.memory.claudeMB)}. Open another window anyway?`, 'Open anyway');
+                    if (!ok) return;
+                }
+                await act('api/windows');
+                focusTerminal();
+            }
+
+            function openList() {
+                if (!state) return;
+                renderList();
+                listModal.classList.add('active');
+            }
+
+            function closeList() {
+                listModal.classList.remove('active');
+            }
+
+            menuBtn.addEventListener('click', openList);
+            document.getElementById('windows-new-btn').addEventListener('click', newWindow);
+            document.getElementById('windows-close-btn').addEventListener('click', () => { closeList(); focusTerminal(); });
+            listModal.addEventListener('click', (e) => { if (e.target === listModal) closeList(); });
+            document.addEventListener('keydown', (e) => {
+                if (e.key !== 'Escape') return;
+                if (confirmModal.classList.contains('active')) answerConfirm(false);
+                else if (listModal.classList.contains('active')) closeList();
+            });
+            document.addEventListener('visibilitychange', () => {
+                if (document.visibilityState === 'visible') refresh();
+                schedule();
+            });
+            window.addEventListener('resize', () => { if (state) fit(); });
+
+            refresh().then(schedule);
         })();
 
         console.log('Voice input module loaded');

@@ -74,7 +74,7 @@ is_persistent_claude_enabled() {
     [ "${USE_PERSISTENT_CLAUDE:-false}" = "true" ]
 }
 
-# Other windows of the tmux session:
+# Other windows of the tmux session (the panel's window bar shows the same):
 # one line each, "@id<TAB>number<TAB>label<TAB>kind", kind being claude,
 # picker or empty, whatever the label. Nothing outside tmux.
 # PICKER_TMUX lets the tests stand in for tmux.
@@ -90,7 +90,7 @@ process_table() {
         awk '/^Name:/ { name = $2 } /^Pid:/ { pid = $2 } /^PPid:/ { print pid, $2, name }'
 }
 
-# What each window runs, for its label. tmux names a
+# Same labels as windowLabel in image-service/windows-api.mjs. tmux names a
 # window after its pane's process group leader, which for the launch
 # command's `bash -c` is bash, so look for Claude (named claude, or its
 # version) or this picker among the window's processes. A Claude is named by
@@ -147,7 +147,7 @@ describe_windows() {
 }
 
 # Below this much free memory, ask before starting another Claude (each uses
-# roughly 500-600 MB, and the add-on has no memory limit of its own).
+# roughly 500-600 MB). The panel's + asks the same.
 LOW_MEMORY_MB=1024
 CLAUDE_MEMORY_MB=550
 

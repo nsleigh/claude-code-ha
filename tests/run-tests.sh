@@ -16,6 +16,7 @@ node "$tests_dir/test-terminal-reconnect.js"
 node "$tests_dir/test-sidebar-api.mjs"
 node "$tests_dir/test-uploads.mjs"
 node "$tests_dir/test-voice-audio.mjs"
+node "$tests_dir/test-windows-api.mjs"
 # Runs the real image service, so it needs its npm dependencies. CI runs it
 # inside the built image (docker-build job).
 if [ -d "$tests_dir/../claude-terminal/image-service/node_modules" ]; then
