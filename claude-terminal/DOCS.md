@@ -489,7 +489,7 @@ They all keep running when you switch away or close the panel.
 **The session picker** lists the other windows under its menu (a Claude by
 its conversation's name once it has one) and offers `w) Switch to another
 window`. It asks before starting Claude when less than about 1 GB of memory
-is free: each Claude uses roughly 500–600 MB, which matters on a 2–4 GB Pi
+is free: each Claude uses roughly 450–500 MB, which matters on a 2–4 GB Pi
 or HA Green. Its **Update Claude Code** option warns when Claude is running in
 another window (that Claude keeps the old version until restarted) and runs
 one update at a time.
