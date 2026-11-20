@@ -630,6 +630,24 @@
             color: #fff;
         }
 
+        #window-confirm-title {
+            color: #fff;
+            font-size: 16px;
+            font-weight: 600;
+            line-height: 1.4;
+            margin-bottom: 8px;
+            overflow-wrap: anywhere;
+        }
+
+        /* A busy window: hard to dismiss without reading */
+        #window-confirm-content.warn {
+            border: 2px solid #e8a33d;
+        }
+
+        #window-confirm-content.warn #window-confirm-title {
+            color: #ffb84d;
+        }
+
         #window-confirm-text {
             color: #ddd;
             font-size: 14px;
@@ -1315,7 +1333,8 @@
 
     <!-- Asks before closing a window or starting one with little memory free -->
     <div id="window-confirm-modal">
-        <div id="window-confirm-content" role="alertdialog" aria-describedby="window-confirm-text">
+        <div id="window-confirm-content" role="alertdialog" aria-labelledby="window-confirm-title" aria-describedby="window-confirm-text">
+            <div id="window-confirm-title"></div>
             <div id="window-confirm-text"></div>
             <div class="modal-buttons">
                 <button id="window-confirm-ok" class="modal-btn modal-btn-danger">OK</button>
@@ -2670,6 +2689,8 @@
             const list = document.getElementById('windows-list');
             const memoryLine = document.getElementById('windows-memory');
             const confirmModal = document.getElementById('window-confirm-modal');
+            const confirmContent = document.getElementById('window-confirm-content');
+            const confirmTitle = document.getElementById('window-confirm-title');
             const confirmText = document.getElementById('window-confirm-text');
             const confirmOk = document.getElementById('window-confirm-ok');
             const confirmCancel = document.getElementById('window-confirm-cancel');
@@ -2691,11 +2712,15 @@
                 if (term) term.focus();
             }
 
-            function askConfirm(message, okLabel) {
+            // warn: amber frame and Cancel focused, so Enter doesn't close a
+            // busy window by habit
+            function askConfirm(title, message, okLabel, warn = false) {
+                confirmTitle.textContent = title;
                 confirmText.textContent = message;
                 confirmOk.textContent = okLabel;
+                confirmContent.classList.toggle('warn', warn);
                 confirmModal.classList.add('active');
-                confirmOk.focus();
+                (warn ? confirmCancel : confirmOk).focus();
                 return new Promise((resolve) => { confirmResolve = resolve; });
             }
 
@@ -2859,11 +2884,21 @@
             }
 
             async function closeWindow(w) {
-                const ask = w.busy ? `Window ${describe(w)} is busy. Close it anyway? ` : `Close window ${describe(w)}? `;
-                const what = ask + (w.claude
-                    ? 'Claude stops, and whatever it is running ends. The conversation is saved: claude -r resumes it.'
-                    : 'Whatever it is running ends.');
-                if (!await askConfirm(what, 'Close window')) return;
+                const name = `window ${w.index} '${w.label}'`;
+                let title, what;
+                if (w.busy) {
+                    title = `⚠️ Close busy ${name}?`;
+                    what = w.claude
+                        ? 'Claude is still working. Closing stops it partway, and whatever it is running ends. ' +
+                          'The conversation is saved: claude -r resumes it.'
+                        : 'A command is still running there. Closing ends it partway.';
+                } else {
+                    title = `Close ${name}?`;
+                    what = w.claude
+                        ? 'Claude stops. The conversation is saved: claude -r resumes it.'
+                        : 'Whatever it is running ends.';
+                }
+                if (!await askConfirm(title, what, w.busy ? 'Close anyway' : 'Close window', w.busy)) return;
                 await act(`api/windows/${encodeURIComponent(w.id)}/close`);
                 focusTerminal();
             }
@@ -2873,8 +2908,9 @@
                 await refresh();
                 if (state && state.memory.low) {
                     const ok = await askConfirm(
+                        '⚠️ Low memory',
                         `Only ${gb(state.memory.availableMB)} of memory is free, and each Claude uses about ` +
-                        `${gb(state.memory.claudeMB)}. Open another window anyway?`, 'Open anyway');
+                        `${gb(state.memory.claudeMB)}. Open another window anyway?`, 'Open anyway', true);
                     if (!ok) return;
                 }
                 await act('api/windows');
