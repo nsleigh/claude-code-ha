@@ -22,9 +22,9 @@ import { execFile } from 'node:child_process';
 
 export const SESSION = 'claude';
 // Below this much free memory, + and the picker ask before starting another
-// Claude. About two Claudes' worth (each uses roughly 500-600 MB).
+// Claude. About two Claudes' worth (each uses roughly 450-500 MB, measured with the HA plugin).
 export const LOW_MEMORY_MB = 1024;
-export const CLAUDE_MB_ESTIMATE = 550;
+export const CLAUDE_MB_ESTIMATE = 500;
 // A Claude is busy while its footer offers "esc to interrupt" (it is
 // thinking, or waiting on a command it runs) or counts background shells
 // ("1 shell · ↓ to manage": idle at the prompt, but a command it started

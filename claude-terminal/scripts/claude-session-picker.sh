@@ -147,9 +147,9 @@ describe_windows() {
 }
 
 # Below this much free memory, ask before starting another Claude (each uses
-# roughly 500-600 MB). The panel's + asks the same.
+# roughly 450-500 MB, measured with the HA plugin). The panel's + asks the same.
 LOW_MEMORY_MB=1024
-CLAUDE_MEMORY_MB=550
+CLAUDE_MEMORY_MB=500
 
 available_memory_mb() {
     awk '/^MemAvailable:/ { printf "%d\n", $2 / 1024 }' "${PICKER_MEMINFO:-/proc/meminfo}" 2>/dev/null

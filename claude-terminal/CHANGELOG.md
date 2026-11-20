@@ -17,7 +17,7 @@
 ### 🛠️ Improvement - Session Picker Helps With More Than One Claude
 - **The picker lists the other windows and can switch to one**: a second Claude (or a shell) could already run in another tmux window, useful while the first is busy running a long command, but only the `Ctrl-b` keys reached it, which a phone doesn't have. Under its menu the picker now shows "Other windows: 2 claude, 3 bash" and offers `w) Switch to another window`
   - A Claude is shown by its conversation's name once it has one (the topic Claude sets as the terminal title, usually the name `/resume` lists). tmux calls every window started by the add-on "bash", so the picker looks at what actually runs in each window
-- **Memory check**: each Claude uses roughly 500–600 MB, and the add-on has no memory limit of its own, so on a small Pi or HA Green several could run the host out of memory. With less than about 1 GB free, the picker asks before starting Claude
+- **Memory check**: each Claude uses roughly 450–500 MB, and the add-on has no memory limit of its own, so on a small Pi or HA Green several could run the host out of memory. With less than about 1 GB free, the picker asks before starting Claude
 - **Update Claude Code** warns when Claude is running in another window (it keeps the old version until restarted, and could fail if it loads a file the update changes) and runs one update at a time, since two npm installs into one folder can break it
 - **Docs**: a new "Running More Than One Claude" section, with the tmux window keys (`Ctrl-b c`, `w`, `,`, `&`, and why to avoid `Ctrl-b C` and `Ctrl-b d`)
 

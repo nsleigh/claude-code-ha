@@ -499,7 +499,7 @@ opens the same list, with each window's memory use.
 - **+** (or **New window** in the list) opens a window that starts like the
   first one: Claude straight away with **Start Claude automatically** on, the
   session picker with it off. If less than about 1 GB of memory is free, it
-  asks first. Each Claude uses roughly 500–600 MB, which matters on a 2–4 GB
+  asks first. Each Claude uses roughly 450–500 MB, which matters on a 2–4 GB
   Pi or HA Green
 - **✕** closes a window after asking. It shows on the current tab (and on
   hover with a mouse), and on each row of the phone list. Whatever the window
@@ -512,7 +512,7 @@ opens the same list, with each window's memory use.
 **The session picker** lists the other windows under its menu (a Claude by
 its conversation's name once it has one) and offers `w) Switch to another
 window`. It asks before starting Claude when less than about 1 GB of memory
-is free: each Claude uses roughly 500–600 MB, which matters on a 2–4 GB Pi
+is free: each Claude uses roughly 450–500 MB, which matters on a 2–4 GB Pi
 or HA Green. Its **Update Claude Code** option warns when Claude is running in
 another window (that Claude keeps the old version until restarted) and runs
 one update at a time.
