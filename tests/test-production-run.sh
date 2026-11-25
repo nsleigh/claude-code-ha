@@ -419,6 +419,33 @@ trust_upload_dir
 printf '{"projects": {broken' > "$trust_cfg"
 trust_upload_dir
 [ "$(cat "$trust_cfg")" = '{"projects": {broken' ] || fail "an unreadable ~/.claude.json must never be rewritten"
+
+# An explicit false is a choice made in Claude, and is kept
+printf '%s\n' '{"projects": {"/data/uploads": {"hasTrustDialogAccepted": false, "allowedTools": []}}}' > "$trust_cfg"
+before=$(cat "$trust_cfg")
+trust_upload_dir
+[ "$(cat "$trust_cfg")" = "$before" ] || fail "an explicit hasTrustDialogAccepted: false must be kept"
+
+# A write that fails partway leaves the original whole, and no copy behind.
+# The stub writes a cut-off file, then fails, like a full disk.
+printf '%s\n' '{"numStartups": 3, "projects": {}}' > "$trust_cfg"
+before=$(cat "$trust_cfg")
+printf() { builtin printf '{"projects": {"/data/up' > /dev/stdout; return 1; }
+trust_upload_dir > /dev/null
+unset -f printf
+[ "$(cat "$trust_cfg")" = "$before" ] || fail "a failed write must leave ~/.claude.json as it was"
+leftover=$(find "$tmp_dir/trust" -name '.claude.json.*')
+[ -z "$leftover" ] || fail "a failed write must not leave a temporary copy: $leftover"
+
+# The update is a rename, so a symlinked ~/.claude.json stays a link to the
+# file that gets the update
+printf '%s\n' '{"projects": {}}' > "$tmp_dir/trust/real.json"
+rm -f "$trust_cfg"
+ln -s real.json "$trust_cfg"
+trust_upload_dir
+[ -L "$trust_cfg" ] || fail "a symlinked ~/.claude.json must stay a symlink"
+[ "$(jq -r '.projects["/data/uploads"].hasTrustDialogAccepted' "$tmp_dir/trust/real.json")" = true ] || \
+    fail "the file a symlinked ~/.claude.json points to should be updated"
 unset CLAUDE_GLOBAL_CONFIG UPLOAD_TRUST_DIR
 
 grep -qE '^ +trust_upload_dir$' <(sed -n '/^main() {/,/^}/p' "$repo_root/claude-terminal/run.sh") || \
