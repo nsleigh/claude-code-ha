@@ -1,6 +1,6 @@
 # Changelog
 
-## 2.5.10
+## 2.5.11
 
 ### ✨ New Feature - Window Bar for More Than One Claude
 - **Tabs for the terminal's windows in the panel header**: the picker (2.5.9) can list and switch windows, but nothing in the panel showed they existed, and a phone has no `Ctrl-b` keys
@@ -12,7 +12,7 @@
   - Every device shows the same windows, as before: switching on one switches all, and a new device opens where you were. Windows opened or switched with the tmux keys show up within a few seconds
 - The header's title now shortens with "…" to make room for the tabs
 
-## 2.5.9
+## 2.5.10
 
 ### 🛠️ Improvement - Session Picker Helps With More Than One Claude
 - **The picker lists the other windows and can switch to one**: a second Claude (or a shell) could already run in another tmux window, useful while the first is busy running a long command, but only the `Ctrl-b` keys reached it, which a phone doesn't have. Under its menu the picker now shows "Other windows: 2 claude, 3 bash" and offers `w) Switch to another window`
@@ -21,12 +21,20 @@
 - **Update Claude Code** warns when Claude is running in another window (it keeps the old version until restarted, and could fail if it loads a file the update changes) and runs one update at a time, since two npm installs into one folder can break it
 - **Docs**: a new "Running More Than One Claude" section, with the tmux window keys (`Ctrl-b c`, `w`, `,`, `&`, and why to avoid `Ctrl-b C` and `Ctrl-b d`)
 
-## 2.5.8
+## 2.5.9
 
 ### 🐛 Bug Fix - No "Adding a New Directory" Question at Every Start
 - **Claude no longer asks to trust `/data/uploads` each time it starts**: the add-on starts Claude with `--add-dir /data/uploads` so it can read files you paste, drop or upload. From Claude Code 2.1.327, Claude asks whether to trust each added folder it has no trust record for, and the answer lasts only for that session, so the question came up at every start, from the first window and from the session picker
-- At start-up the add-on now records `/data/uploads` as trusted in `~/.claude.json`, the same record Claude writes when you accept its trust question. The rest of the file is left as it was, and a file that can't be read as JSON is never rewritten
+- At start-up the add-on now records `/data/uploads` as trusted in `~/.claude.json`, the same record Claude writes when you accept its trust question. The rest of the file is left as it was, and a file that can't be read as JSON is never rewritten. The new file is written beside the old one and renamed into place, so a failed write can't leave a cut-off file, and a folder you have told Claude not to trust (`hasTrustDialogAccepted: false`) stays untrusted
 - Only the upload folder is trusted, not `/data`, which also holds your login. Uploads are saved flat with cleaned-up names, so no Claude settings can be placed in that folder
+
+## 2.5.8
+
+### 🐛 Bug Fix - Login Notifications
+- Reassemble wrapped Claude login links from tmux and skip incomplete OAuth links when posting Home Assistant notifications.
+
+### 🔧 Technical - GitHub CLI
+- Install GitHub CLI from Alpine's signed package repository to avoid GitHub API rate limits during image builds.
 
 ## 2.5.7
 

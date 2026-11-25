@@ -665,30 +665,43 @@ trust_upload_dir() {
     local config_file="${CLAUDE_GLOBAL_CONFIG:-$HOME/.claude.json}"
     local dir="${UPLOAD_TRUST_DIR:-/data/uploads}"
     local filter='.projects[$d] = ((.projects[$d] // {}) + {hasTrustDialogAccepted: true})'
-    local updated
+    local target tmp updated
 
     if [ -s "$config_file" ]; then
-        if jq -e --arg d "$dir" '.projects[$d].hasTrustDialogAccepted == true' "$config_file" >/dev/null 2>&1; then
-            return 0
-        fi
+        # Already decided: true needs nothing, and an explicit false is a
+        # choice made in Claude, which is kept
+        case "$(jq -r --arg d "$dir" '.projects[$d].hasTrustDialogAccepted | if type == "boolean" then . else "unset" end' "$config_file" 2>/dev/null)" in
+            true) return 0 ;;
+            false)
+                bashio::log.info "Not marking ${dir} as trusted: ${config_file} records it as not trusted"
+                return 0
+                ;;
+        esac
         # Never rewrite a file jq can't read: Claude may restore it from a backup
         if ! updated=$(jq --arg d "$dir" "$filter" "$config_file" 2>/dev/null); then
             bashio::log.warning "Not marking ${dir} as trusted: ${config_file} could not be read as JSON"
             return 0
         fi
-        # In place, so the file keeps its owner and permissions
-        if ! printf '%s\n' "$updated" > "$config_file"; then
-            bashio::log.warning "Could not mark ${dir} as trusted in ${config_file}"
-            return 0
-        fi
     else
         updated=$(jq -n --arg d "$dir" "$filter") || return 0
-        if ! (umask 077 && printf '%s\n' "$updated" > "$config_file"); then
-            bashio::log.warning "Could not mark ${dir} as trusted in ${config_file}"
-            return 0
-        fi
     fi
-    bashio::log.info "Marked ${dir} as a trusted folder for Claude"
+
+    # Write a copy beside the file and rename it into place, so a failed
+    # write never leaves a cut-off ~/.claude.json. The copy starts as cp -p
+    # of the original, so it keeps the owner and permissions; a new file is
+    # mktemp's 600. A symlink is followed, so the link itself is kept.
+    target=$(readlink -f "$config_file" 2>/dev/null) || target="$config_file"
+    if ! tmp=$(mktemp "${target}.XXXXXX" 2>/dev/null); then
+        bashio::log.warning "Could not mark ${dir} as trusted in ${config_file}"
+        return 0
+    fi
+    if { [ ! -e "$target" ] || cp -p "$target" "$tmp"; } &&
+        printf '%s\n' "$updated" > "$tmp" && mv -f "$tmp" "$target"; then
+        bashio::log.info "Marked ${dir} as a trusted folder for Claude"
+    else
+        rm -f "$tmp"
+        bashio::log.warning "Could not mark ${dir} as trusted in ${config_file}"
+    fi
 }
 
 # Home Assistant status line (scripts/ha-statusline.sh). The add-on's
