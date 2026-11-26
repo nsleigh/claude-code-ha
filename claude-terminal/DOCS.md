@@ -482,9 +482,17 @@ Claude to work on is safer.
 
 ### Running More Than One Claude
 
-The terminal can hold several windows, each with its own Claude or shell,
-for example a second Claude while the first is busy running a long command.
-They all keep running when you switch away or close the panel.
+The terminal's tmux session can hold several windows, each with its own
+Claude or shell, for example a second Claude while the first is busy running
+a long command, or a shell beside a Claude whose command you don't want to
+interrupt. They all keep running when you switch away or close the panel.
+
+**Every device shows the same windows.** The panel on each phone, tablet and
+computer attaches to the same tmux session, so a window opened on one device
+appears on the others, and switching windows on one device switches the
+others too. That is what lets you start something on one device and carry on
+from another. It also means two devices can't show different windows at the
+same time.
 
 **The window bar.** The panel header shows a tab for each window, labelled
 with its number and what it runs: a Claude by its conversation's name once
@@ -506,14 +514,11 @@ opens the same list, with each window's memory use.
   is running ends; a Claude's conversation is saved, and `claude -r` resumes
   it. The last window can't be closed this way, since that would end the
   session
-- Every device shows the same windows, and switching on one switches all of
-  them, so opening the panel elsewhere lands where you were
 
 **The session picker** lists the other windows under its menu (a Claude by
 its conversation's name once it has one) and offers `w) Switch to another
 window`. It asks before starting Claude when less than about 1 GB of memory
-is free: each Claude uses roughly 450–500 MB, which matters on a 2–4 GB Pi
-or HA Green. Its **Update Claude Code** option warns when Claude is running in
+is free. Its **Update Claude Code** option warns when Claude is running in
 another window (that Claude keeps the old version until restarted) and runs
 one update at a time.
 
@@ -521,13 +526,17 @@ one update at a time.
 
 | Keys | What it does |
 | --- | --- |
-| `Ctrl-b c` | New window (a shell in `/config`; run `claude-session-picker` in it for the menu) |
+| `Ctrl-b c` | New shell window. Run `pwd` to check its working directory and `claude-session-picker` to open the menu |
 | `Ctrl-b 1` … `9` | Go to that window |
 | `Ctrl-b n` / `Ctrl-b p` | Next / previous window |
 | `Ctrl-b w` | List all windows with what each is running; pick one with the arrows and Enter |
 | `Ctrl-b ,` | Rename the window (shown in the window bar and the status bar) |
 | `Ctrl-b &` | Close the window, after asking |
 
+- The status bar at the bottom lists the windows: `*` marks the current one
+  and `-` the one before. A window running Claude from the session picker
+  (including the first one) is listed as `bash`, because tmux names a window
+  after the shell that started it; rename it with `Ctrl-b ,`
 - Use lower case: `Ctrl-b C` (capital, for example with Caps Lock on) opens
   tmux's options screen instead. Press `q` to leave it
 - Avoid `Ctrl-b d` (detach): the panel shows a disconnected terminal until it
@@ -537,9 +546,10 @@ one update at a time.
 - With **tmux Mouse Mode** on, clicking a window name in the status bar
   switches too
 
-Two Claudes share `/config`, so they can overwrite each other's changes, and
-one can restart Home Assistant under the other. They also share your plan's
-usage limits.
+Each Claude uses roughly 450–500 MB of memory, which matters on a 2–4 GB Pi or
+HA Green. Two Claudes share `/config`, so they can overwrite each other's
+changes, and one can restart Home Assistant under the other. They also share
+your plan's usage limits.
 
 ### Logging In
 
