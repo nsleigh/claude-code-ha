@@ -1,6 +1,6 @@
 # Changelog
 
-## 2.5.12
+## 2.5.13
 
 ### 🛠️ Improvement - Session Picker Helps With More Than One Claude
 - **The picker lists the other windows and can switch to one**: a second Claude (or a shell) could already run in another tmux window, useful while the first is busy running a long command, but only the `Ctrl-b` keys reached it, which a phone doesn't have. Under its menu the picker now shows "Other windows: 2 claude, 3 bash" and offers `w) Switch to another window`
@@ -8,6 +8,12 @@
 - **Memory check**: each Claude uses roughly 450–500 MB, and the add-on has no memory limit of its own, so on a small Pi or HA Green several could run the host out of memory. With less than about 1 GB free, the picker asks before starting Claude
 - **Update Claude Code** warns when Claude is running in another window (it keeps the old version until restarted, and could fail if it loads a file the update changes) and runs one update at a time, since two npm installs into one folder can break it
 - **Docs**: the "Running More Than One Claude" section now covers the picker's window list, memory check and update warning
+
+## 2.5.12
+
+### 🐛 Bug Fix - No "Reload Site?" Prompt
+- **Reloading or closing the terminal tab no longer asks "Reload site? Changes that you made may not be saved"**: the prompt came from ttyd, the terminal inside the panel, which warns that leaving ends the running command. Here tmux keeps Claude and your shells running when the tab closes, and reopening it picks up where you left off, so there was nothing to lose
+- ttyd now starts with its leave alert turned off (`--client-option disableLeaveAlert=true`)
 
 ## 2.5.10
 
